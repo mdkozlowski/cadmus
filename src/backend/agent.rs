@@ -1,5 +1,5 @@
-use crate::engine::gene::Genome;
-use crate::engine::Position;
+use crate::backend::gene::Genome;
+use crate::backend::Position;
 
 #[derive(Debug)]
 pub struct Agent {

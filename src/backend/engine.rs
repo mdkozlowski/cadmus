@@ -1,17 +1,8 @@
-use cgmath::Vector2;
-use crate::engine::agent::Agent;
-use crate::engine::entity::{Entity, EntityType};
-
 use poisson_diskus::bridson;
-use crate::engine::gene::GenomePool;
-
-mod map;
-mod entity;
-mod agent;
-mod gene;
-
-type Position = Vector2<u32>;
-type Offset = Vector2<i32>;
+use crate::backend::agent::Agent;
+use crate::backend::entity::{Entity, EntityType};
+use crate::backend::gene::GenomePool;
+use crate::backend::Position;
 
 #[derive(Debug)]
 pub struct Engine {
@@ -19,7 +10,6 @@ pub struct Engine {
 	pub round_idx: usize,
 	pub entities: Vec<Entity>,
 	pub agents: Vec<Agent>,
-	pub genepool: GenomePool
 }
 
 impl Engine {
@@ -31,7 +21,6 @@ impl Engine {
 			round_idx: 0,
 			entities: Vec::new(),
 			agents: Vec::new(),
-			genepool: GenomePool::new()
 		};
 		engine.initialise();
 

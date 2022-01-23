@@ -1,6 +1,6 @@
 use cgmath::Vector2;
-use crate::engine::entity::EntityType::Food;
-use crate::engine::Position;
+use crate::backend::entity::EntityType::Food;
+use crate::backend::Position;
 
 #[derive(Debug)]
 pub struct Entity {
