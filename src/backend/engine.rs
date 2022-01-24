@@ -22,9 +22,20 @@ impl Engine {
 			entities: Vec::new(),
 			agents: Vec::new(),
 		};
-		engine.initialise();
-
 		engine
+	}
+
+	pub fn play_match(&mut self) {
+		self.reset();
+		self.initialise()
+
+
+	}
+
+	fn reset(&mut self) {
+		self.round_idx = 0;
+		self.entities = Vec::new();
+		self.agents = Vec::new();
 	}
 
 	fn initialise(&mut self) {

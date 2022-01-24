@@ -28,7 +28,9 @@ impl Orchestrator {
 		}
 	}
 
-	pub fn start_matches() {
-		
+	pub fn start_matches(&mut self) {
+		for i in 0..100 {
+			self.engine.play_match();
+		}
 	}
 }
