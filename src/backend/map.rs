@@ -2,12 +2,14 @@ struct Map {
 
 }
 
+#[derive(PartialEq, Clone, Copy)]
 pub enum Action {
 	Move(Direction),
 	Reproduce
 }
 
-enum Direction {
+#[derive(PartialEq, Clone, Copy)]
+pub enum Direction {
 	Up,
 	Down,
 	Left,

@@ -1,9 +1,9 @@
 use tch::Tensor;
 use tch::nn::Module;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash)]
 pub struct Genome {
-	module: Module
+	// module: Module
 }
 
 #[derive(Debug)]
