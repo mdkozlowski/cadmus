@@ -93,37 +93,45 @@ impl Engine {
 		}
 	}
 
+	fn resolve_target_position(&self, seen_positions: &mut HashSet<Position>, agent: &Agent, action: &Action) -> Position {
+		let target_position = self.resolve_action(agent, &action);
+
+		let duplicated_position = seen_positions.insert(target_position);
+		return if duplicated_position {
+			let new_direction_collection = match action {
+				Action::Move(dir) => {
+					[Direction::Up, Direction::Down, Direction::Left, Direction::Right]
+						.iter()
+						.filter(|a| **a != *dir)
+						.map(|a| *a)
+						.collect()
+				}
+				Action::Reproduce => {
+					[Direction::Up, Direction::Down, Direction::Left, Direction::Right]
+						.to_vec()
+				}
+			};
+			let new_direction = new_direction_collection
+				.choose(&mut rand::thread_rng())
+				.unwrap()
+				.clone();
+			let new_action = Action::Move(new_direction);
+			let new_position = self.resolve_target_position(seen_positions, agent, &new_action);
+
+			new_position
+		} else {
+			target_position
+		}
+	}
+
 	fn apply_actions(&mut self, actions: Vec<(usize, Action)>) {
 		let mut seen_positions: HashSet<Position> = HashSet::new();
 		let mut target_positions: Vec<(usize, Position)> = Vec::new();
 		for (idx, action) in actions.iter() {
 			let agent: &Agent = self.agents.get(*idx).unwrap();
-			let target_position = self.resolve_action(agent, action);
 
-			let duplicated_position = seen_positions.insert(target_position);
-			if duplicated_position {
-				let new_direction_collection = match action {
-					Action::Move(dir) => {
-						[Direction::Up, Direction::Down, Direction::Left, Direction::Right]
-							.iter()
-							.filter(|a| **a != *dir)
-							.map(|a| *a)
-							.collect()
-					}
-					Action::Reproduce => {
-						[Direction::Up, Direction::Down, Direction::Left, Direction::Right].to_vec()
-					}
-				};
-				let new_direction = new_direction_collection
-					.choose(&mut rand::thread_rng())
-					.unwrap()
-					.clone();
-				let new_action = Action::Move(new_direction);
-				let new_position = self.resolve_action(agent, &new_action);
-				target_positions.push((*idx, new_position));
-				seen_positions.insert(new_position);
-
-			}
+			let new_position = self.resolve_target_position(&mut seen_positions, agent, action);
+			target_positions.push((*idx, new_position));
 		}
 
 		// set new position
