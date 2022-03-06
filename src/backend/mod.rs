@@ -5,6 +5,7 @@ mod entity;
 mod agent;
 mod gene;
 mod engine;
+mod engine_tests;
 
 type Position = Vector2<i32>;
 type Offset = Vector2<i32>;

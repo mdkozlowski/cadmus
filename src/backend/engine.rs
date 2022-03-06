@@ -80,7 +80,7 @@ impl Engine {
 
 	pub fn resolve_action(&self, agent: &Agent, action: &Action) -> Position {
 		let current_pos = agent.position;
-		match action {
+		let mut target_pos = match action {
 			Action::Move(direction) => {
 				match direction {
 					Direction::Up => { current_pos + Offset::new(0, -1) }
@@ -90,7 +90,24 @@ impl Engine {
 				}
 			}
 			Action::Reproduce => { current_pos }
+		};
+		let bounds = (*self.config.size.get(0).unwrap() as i32,
+					  *self.config.size.get(1).unwrap() as i32);
+
+		if target_pos.x > bounds.0 {
+			target_pos.x = bounds.0;
 		}
+		if target_pos.x < 0 {
+			target_pos.x = 0;
+		}
+		if target_pos.y > bounds.1 {
+			target_pos.y = bounds.1;
+		}
+		if target_pos.y < 0 {
+			target_pos.y = 0;
+		}
+
+		target_pos
 	}
 
 	fn resolve_target_position(&self, seen_positions: &mut HashSet<Position>, agent: &Agent, action: &Action) -> Position {
@@ -177,7 +194,7 @@ impl Engine {
 		}
 	}
 
-	fn reset(&mut self) {
+	pub fn reset(&mut self) {
 		self.round_idx = 0;
 		// self.entities = HashMap::new();
 		self.entities = HashMap::new();
