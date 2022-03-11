@@ -11,8 +11,8 @@ use std::rc::Rc;
 use rand::prelude::{IteratorRandom, SliceRandom};
 
 #[derive(Debug)]
-pub struct MatchStats {
-	agent_stats: Vec<(AgentStats, Genome)>,
+pub struct MatchStats<'a> {
+	agent_stats: Vec<(AgentStats, &'a Genome)>,
 	duration: usize,
 }
 
@@ -49,6 +49,7 @@ impl Engine {
 		engine
 	}
 
+
 	pub fn play_match(&mut self) -> MatchStats {
 		self.reset();
 		self.initialise();
@@ -57,11 +58,15 @@ impl Engine {
 			self.step()
 		}
 
+		// update genome stats
+		self.agents.iter()
+			.map(|a| a.)
+
 		let stats = MatchStats {
 			agent_stats: self.agents.iter()
-				.map(|x| (x.stats.clone(), x.genome.clone()))
+				.map(|x| (x.stats.clone(), &x.genome))
 				.collect(),
-			duration: self.round_idx,
+			duration: self.round_idx.clone(),
 		};
 
 		stats
@@ -175,16 +180,20 @@ impl Engine {
 		actions
 	}
 
+	pub const DISTANCE_VISIBLE_SIDE : i32 = 3;
+	pub const DISTANCE_VISIBLE_LENGTH : usize = (Engine::DISTANCE_VISIBLE_SIDE as usize * 2) + 1;
+	pub const DISTANCE_VISIBLE_BLOCKS : usize = (Engine::DISTANCE_VISIBLE_SIDE as usize).pow(2);
+
 	fn collect_visions(&mut self) {
 		for agent in &mut self.agents {
 			let mut agent_sense = AgentSense {
 				position: agent.position,
-				map_tiles: [false; 10]
+				map_tiles: [false; Engine::DISTANCE_VISIBLE_BLOCKS]
 			};
-			for (x_idx,x) in (-1..1).enumerate() {
-				for (y_idx, y) in (-1..1).enumerate() {
-					let target = agent.position + Position::new(x, y);
-					let tile_index = x_idx + (y_idx * 3);
+			for (x_idx,x) in (-Engine::DISTANCE_VISIBLE_SIDE..Engine::DISTANCE_VISIBLE_SIDE).enumerate() {
+				for (y_idx, y) in (-Engine::DISTANCE_VISIBLE_SIDE..Engine::DISTANCE_VISIBLE_SIDE).enumerate() {
+					let target = agent.position + Position::new(x as i32, y as i32);
+					let tile_index = x_idx + (y_idx * Engine::DISTANCE_VISIBLE_LENGTH);
 					if self.entities.contains_key(&target) {
 						agent_sense.map_tiles[tile_index] = true;
 					}

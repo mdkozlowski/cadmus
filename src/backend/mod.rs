@@ -1,4 +1,6 @@
+use std::rc::Rc;
 use cgmath::Vector2;
+use crate::backend::agent::{Agent, AgentStats};
 
 mod map;
 mod entity;
@@ -11,7 +13,7 @@ type Position = Vector2<i32>;
 type Offset = Vector2<i32>;
 
 use crate::backend::engine::{Engine, EngineConfig, MatchStats};
-use crate::backend::gene::GenomePool;
+use crate::backend::gene::{Genome, GenomePool};
 
 pub struct Orchestrator {
 	engine: Engine,
@@ -36,7 +38,29 @@ impl Orchestrator {
 		}
 	}
 
+	pub fn get_agents(&self, count: usize) -> Vec<Agent> {
+		let mut agents: Vec<Agent> = Vec::new();
+		for idx in 0..count {
+			let new_agent = Agent {
+				stats: AgentStats::new(),
+				genome: Rc::new(Genome::blank()),
+				id: idx,
+				position: Position::new(0,0),
+				current_sense: None
+			};
+			agents.push(new_agent);
+		}
+		agents
+	}
+
 	pub fn start_matches(&mut self) {
+		let initial_agents = self.get_agents(self.engine.config.agent_count);
+
+		for idx in 0..config.agent_count {
+			genepool.
+		}
+
+
 		let mut matches: Vec<MatchStats> = Vec::new();
 		for i in 0..5 {
 			println!("{}", i);

@@ -1,15 +1,17 @@
+use std::rc::Rc;
+use crate::backend::engine::Engine;
 use crate::backend::gene::Genome;
 use crate::backend::Position;
 
 use crate::backend::map::Action;
 use crate::backend::map::Action::Reproduce;
 
-#[derive(Debug, Clone, Copy, Hash)]
+#[derive(Debug, Hash)]
 pub struct Agent {
 	pub id: usize,
 	pub position: Position,
 	pub stats: AgentStats,
-	pub genome: Genome,
+	pub genome: Rc<Genome>,
 	pub current_sense: Option<AgentSense>
 }
 
@@ -17,7 +19,7 @@ pub struct Agent {
 #[derive(Debug, Clone, Copy, Hash)]
 pub struct AgentSense {
 	pub position: Position,
-	pub map_tiles: [bool; 10]
+	pub map_tiles: [bool; Engine::DISTANCE_VISIBLE_BLOCKS]
 }
 
 #[derive(Debug, Clone, Copy, Hash)]
@@ -25,6 +27,16 @@ pub struct AgentStats {
 	pub food_eaten: usize,
 	pub cumulative_food_eaten: usize,
 	pub steps_taken: usize,
+}
+
+impl AgentStats {
+	pub fn new() -> Self {
+		Self {
+			food_eaten: 0,
+			cumulative_food_eaten: 0,
+			steps_taken: 0
+		}
+	}
 }
 
 impl Agent {

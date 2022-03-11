@@ -29,7 +29,7 @@ mod engine_tests {
 			},
 			position: Position::new(5,5),
 			id: 0,
-			genome: Genome {},
+			genome: Genome::blank(),
 			current_sense: None
 		};
 		let action = Action::Move(Direction::Up);
@@ -60,7 +60,7 @@ mod engine_tests {
 			},
 			position: Position::new(0,0),
 			id: 0,
-			genome: Genome {},
+			genome: Genome::blank(),
 			current_sense: None
 		};
 
