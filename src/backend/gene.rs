@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::env::var;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use rand::prelude::SliceRandom;
@@ -14,16 +15,34 @@ use crate::backend::Position;
 #[derive(Debug)]
 pub struct Genome {
 	var_store: Option<VarStore>,
+	module: Sequential,
 	id: u64
 }
 
 impl Genome {
 	pub fn blank(id: u64) -> Self {
-		let var_store = VarStore::new(Device::Cpu);
-		Network::get_random_net(&var_store);
+		let (net, var_store) = Network::get_network(&mut None);
+
+		let data = Tensor::rand(&[1,49], kind::FLOAT_CPU).set_requires_grad(false);
+		let out1 = net.forward(&data);
+		out1.print();
+		// println!("{:?}", out1.mean(kind::Kind::Float));
+
+
+		for (name, mut var) in var_store.variables() {
+			var.set_requires_grad(false);
+			let new_var = var.shallow_clone() + Tensor::rand(var.size().as_slice(), kind::FLOAT_CPU);
+			var.copy_(&new_var);
+		}
+
+		let (net, var_store) = Network::get_network(&mut Some(var_store));
+		let out2 = net.forward(&data);
+		out2.print();
+		// println!("{:?}", out2.mean(kind::Kind::Float));
 
 		Genome {
 			var_store: Some(var_store),
+			module: net,
 			id
 		}
 	}
@@ -38,19 +57,30 @@ impl Network {
 
 	const HIDDEN_NODES: i64 = 32;
 
-	pub fn get_random_net(var_store: &VarStore) -> Sequential {
-		let vs = &var_store.root();
+	pub fn get_network(vs: &mut Option<nn::VarStore>) -> (Sequential, VarStore) {
+		let mut new_var_store = VarStore::new(Device::Cpu);
+		new_var_store.freeze();
+
+		let path = &new_var_store.root();
 		let default_module = nn::seq()
 			.add(nn::linear(
-				vs / "layer1",
+				path / "layer1",
 				Engine::DISTANCE_VISIBLE_BLOCKS as i64,
 				Network::HIDDEN_NODES,
 				Default::default(),
 			))
 			.add_fn(|xs| xs.tanh())
-			.add(nn::linear(vs / "final", Network::HIDDEN_NODES, 4, Default::default()));
+			.add(nn::linear(path / "final", Network::HIDDEN_NODES, 4, Default::default()))
+			.add_fn(|xs| xs.softmax(1, kind::Kind::Float));
 
-		default_module
+		match vs {
+			None => {}
+			Some(new_weights) => {
+				new_var_store.copy(new_weights);
+			}
+		}
+
+		(default_module, new_var_store)
 	}
 }
 

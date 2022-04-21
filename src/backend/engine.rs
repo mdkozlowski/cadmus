@@ -178,7 +178,7 @@ impl Engine {
 
 	pub const DISTANCE_VISIBLE_SIDE : i32 = 3;
 	pub const DISTANCE_VISIBLE_LENGTH : usize = (Engine::DISTANCE_VISIBLE_SIDE as usize * 2) + 1;
-	pub const DISTANCE_VISIBLE_BLOCKS : usize = (Engine::DISTANCE_VISIBLE_SIDE as usize).pow(2);
+	pub const DISTANCE_VISIBLE_BLOCKS : usize = (Engine::DISTANCE_VISIBLE_LENGTH as usize).pow(2);
 
 	fn collect_visions(&mut self) {
 		for (idx, agent) in &mut self.agents {
