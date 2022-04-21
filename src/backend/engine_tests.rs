@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod engine_tests {
+	use std::collections::{HashMap, HashSet};
 	use crate::backend::agent::{Agent, AgentStats};
 	use crate::backend::engine::{Engine, EngineConfig};
 	use crate::backend::gene::Genome;
@@ -29,7 +30,6 @@ mod engine_tests {
 			},
 			position: Position::new(5,5),
 			id: 0,
-			genome: Genome::blank(),
 			current_sense: None
 		};
 		let action = Action::Move(Direction::Up);
@@ -50,6 +50,50 @@ mod engine_tests {
 	}
 
 	#[test]
+	fn move_collision() {
+		let mut engine = get_engine();
+		let agent1 = Agent {
+			stats: AgentStats {
+				steps_taken: 0,
+				food_eaten: 0,
+				cumulative_food_eaten: 0
+			},
+			position: Position::new(5,4),
+			id: 1,
+			current_sense: None
+		};
+		let agent2 = Agent {
+			stats: AgentStats {
+				steps_taken: 0,
+				food_eaten: 0,
+				cumulative_food_eaten: 0
+			},
+			position: Position::new(5,6),
+			id: 2,
+			current_sense: None
+		};
+
+		engine.agents.insert(1, agent1);
+		engine.agents.insert(2, agent2);
+
+		let action1 = Action::Move(Direction::Down);
+		let action2 = Action::Move(Direction::Up);
+		let mut actions = HashMap::new();
+
+		actions.insert(1, action1);
+		actions.insert(2, action2);
+
+		engine.apply_actions(actions);
+
+		let mut seen_positions: HashSet<Position> = HashSet::new();
+		for (idx, agent) in engine.agents.iter() {
+			seen_positions.insert(agent.position.clone());
+			println!("{:?}", agent.position);
+		}
+		assert_eq!(seen_positions.len(), 2);
+	}
+
+	#[test]
 	fn move_oob() {
 		let mut engine = get_engine();
 		let mut agent1 = Agent {
@@ -60,7 +104,6 @@ mod engine_tests {
 			},
 			position: Position::new(0,0),
 			id: 0,
-			genome: Genome::blank(),
 			current_sense: None
 		};
 

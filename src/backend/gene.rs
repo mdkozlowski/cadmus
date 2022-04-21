@@ -4,9 +4,8 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use rand::prelude::SliceRandom;
 use rand::{RngCore, thread_rng};
-use tch::{CModule, Device, nn, Tensor};
+use tch::{CModule, Device, nn, Tensor, kind};
 use tch::nn::{Module, Sequential, VarStore};
-use test::RunIgnored::No;
 use crate::backend::agent::{Agent, AgentStats};
 use crate::backend::engine::Engine;
 use crate::backend::Position;
@@ -19,56 +18,45 @@ pub struct Genome {
 }
 
 impl Genome {
-	pub fn blank() -> Self {
+	pub fn blank(id: u64) -> Self {
+		let var_store = VarStore::new(Device::Cpu);
+		Network::get_random_net(&var_store);
+
 		Genome {
-			var_store: None,
-			id: thread_rng().next_u64()
+			var_store: Some(var_store),
+			id
 		}
 	}
 }
 
-pub struct Brain {
+pub struct Network {
 	genome: Genome,
 	module: Sequential
 }
 
-impl Brain {
+impl Network {
 
 	const HIDDEN_NODES: i64 = 32;
 
-	pub fn get_net(genome: &Genome) -> Sequential {
-		let vs = &genome.var_store.as_ref().unwrap().root();
+	pub fn get_random_net(var_store: &VarStore) -> Sequential {
+		let vs = &var_store.root();
 		let default_module = nn::seq()
 			.add(nn::linear(
 				vs / "layer1",
 				Engine::DISTANCE_VISIBLE_BLOCKS as i64,
-				Brain::HIDDEN_NODES,
+				Network::HIDDEN_NODES,
 				Default::default(),
 			))
-			.add_fn(|xs| xs.relu())
-			.add(nn::linear(vs, Brain::HIDDEN_NODES, 4, Default::default()));
+			.add_fn(|xs| xs.tanh())
+			.add(nn::linear(vs / "final", Network::HIDDEN_NODES, 4, Default::default()));
 
 		default_module
-	}
-
-	pub fn new(genome: Genome) -> Self {
-		if genome.var_store.is_none() {
-			return Brain {
-				genome,
-				module: nn::seq()
-			}
-		}
-
-		Brain {
-			module: Brain::get_net(&genome),
-			genome,
-		}
 	}
 }
 
 #[derive(Debug)]
 pub struct GenomePool {
-	pool: HashMap<u64, Rc<RefCell<Genome>>>,
+	pool: HashMap<u64, Rc<Genome>>,
 	stats: HashMap<u64, AgentStats>
 }
 
@@ -80,12 +68,12 @@ impl GenomePool {
 		}
 	}
 
-	pub fn add_genome(&mut self, id: u64, genome: Genome) {
-		self.pool.insert(id, Rc::new(RefCell::new(genome)));
+	pub fn add_genome(&mut self, id: u64, genome: Rc<Genome>) {
+		self.pool.insert(id, genome);
 		self.stats.insert(id, AgentStats::new());
 	}
 
-	pub fn get_genome(&self, id: u64) -> &Rc<RefCell<Genome>> {
+	pub fn get_genome(&self, id: u64) -> &Rc<Genome> {
 		self.pool.get(&id).unwrap()
 	}
 

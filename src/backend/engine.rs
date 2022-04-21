@@ -11,8 +11,8 @@ use std::rc::Rc;
 use rand::prelude::{IteratorRandom, SliceRandom};
 
 #[derive(Debug)]
-pub struct MatchStats<'a> {
-	agent_stats: Vec<(AgentStats, &'a Genome)>,
+pub struct MatchStats {
+	agent_stats: HashMap<u64, AgentStats>,
 	duration: usize,
 }
 
@@ -22,7 +22,7 @@ pub struct Engine {
 	pub round_idx: usize,
 	// pub entities: Vec<Entity>,
 	pub entities: HashMap<Position, Entity>,
-	pub agents: Vec<Agent>,
+	pub agents: HashMap<u64, Agent>,
 	pub game_concluded: bool,
 }
 
@@ -42,7 +42,7 @@ impl Engine {
 			config,
 			round_idx: 0,
 			// entities: Vec::new(),
-			agents: Vec::new(),
+			agents: HashMap::new(),
 			game_concluded: false,
 			entities: HashMap::new(),
 		};
@@ -58,14 +58,10 @@ impl Engine {
 			self.step()
 		}
 
-		// update genome stats
-		self.agents.iter()
-			.map(|a| a.)
-
 		let stats = MatchStats {
 			agent_stats: self.agents.iter()
-				.map(|x| (x.stats.clone(), &x.genome))
-				.collect(),
+				.map(|(idx, x)| (*idx, x.stats.clone()))
+				.collect::<HashMap<u64, AgentStats>>(),
 			duration: self.round_idx.clone(),
 		};
 
@@ -118,9 +114,9 @@ impl Engine {
 	fn resolve_target_position(&self, seen_positions: &mut HashSet<Position>, agent: &Agent, action: &Action) -> Position {
 		let target_position = self.resolve_action(agent, &action);
 
-		let duplicated_position = seen_positions.insert(target_position);
+		let duplicated_position = !seen_positions.insert(target_position);
 		return if duplicated_position {
-			let new_direction_collection = match action {
+			let possible_directions = match action {
 				Action::Move(dir) => {
 					[Direction::Up, Direction::Down, Direction::Left, Direction::Right]
 						.iter()
@@ -133,7 +129,7 @@ impl Engine {
 						.to_vec()
 				}
 			};
-			let new_direction = new_direction_collection
+			let new_direction = possible_directions
 				.choose(&mut rand::thread_rng())
 				.unwrap()
 				.clone();
@@ -146,23 +142,23 @@ impl Engine {
 		}
 	}
 
-	fn apply_actions(&mut self, actions: Vec<(usize, Action)>) {
+	pub fn apply_actions(&mut self, actions: HashMap<u64, Action>) {
 		let mut seen_positions: HashSet<Position> = HashSet::new();
-		let mut target_positions: Vec<(usize, Position)> = Vec::new();
+		let mut target_positions: HashMap<u64, Position> = HashMap::new();
 		for (idx, action) in actions.iter() {
-			let agent: &Agent = self.agents.get(*idx).unwrap();
+			let agent: &Agent = self.agents.get(idx).unwrap();
 
 			let new_position = self.resolve_target_position(&mut seen_positions, agent, action);
-			target_positions.push((*idx, new_position));
+			target_positions.insert(*idx, new_position);
 		}
 
 		// set new position
 		for (idx, target) in target_positions.iter() {
-			self.agents.get_mut(*idx).unwrap().position = *target
+			self.agents.get_mut(idx).unwrap().position = *target
 		}
 
 		// consume food
-		for agent in self.agents.iter_mut() {
+		for (idx, agent) in self.agents.iter_mut() {
 			if self.entities.contains_key(&agent.position) {
 				self.entities.remove(&agent.position);
 				agent.increment_food();
@@ -170,12 +166,12 @@ impl Engine {
 		}
 	}
 
-	fn process_agents(&mut self) -> Vec<(usize, Action)> {
-		let mut actions: Vec<(usize, Action)> = Vec::new();
+	fn process_agents(&mut self) -> HashMap<u64, Action> {
+		let mut actions: HashMap<u64, Action> = HashMap::new();
 		self.collect_visions();
-		for agent in self.agents.iter_mut() {
+		for (idx, agent) in self.agents.iter_mut() {
 			let action = agent.get_action();
-			actions.push((agent.id, action));
+			actions.insert(agent.id, action);
 		}
 		actions
 	}
@@ -185,7 +181,7 @@ impl Engine {
 	pub const DISTANCE_VISIBLE_BLOCKS : usize = (Engine::DISTANCE_VISIBLE_SIDE as usize).pow(2);
 
 	fn collect_visions(&mut self) {
-		for agent in &mut self.agents {
+		for (idx, agent) in &mut self.agents {
 			let mut agent_sense = AgentSense {
 				position: agent.position,
 				map_tiles: [false; Engine::DISTANCE_VISIBLE_BLOCKS]
@@ -207,7 +203,7 @@ impl Engine {
 		self.round_idx = 0;
 		// self.entities = HashMap::new();
 		self.entities = HashMap::new();
-		self.agents = Vec::new();
+		self.agents = HashMap::new();
 	}
 
 	fn initialise(&mut self) {

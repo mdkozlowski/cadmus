@@ -8,10 +8,9 @@ use crate::backend::map::Action::Reproduce;
 
 #[derive(Debug, Hash)]
 pub struct Agent {
-	pub id: usize,
+	pub id: u64,
 	pub position: Position,
 	pub stats: AgentStats,
-	pub genome: Rc<Genome>,
 	pub current_sense: Option<AgentSense>
 }
 

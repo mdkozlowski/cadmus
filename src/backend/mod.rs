@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use cgmath::Vector2;
+use rand::{Rng, RngCore, thread_rng};
 use crate::backend::agent::{Agent, AgentStats};
 
 mod map;
@@ -22,6 +23,9 @@ pub struct Orchestrator {
 
 impl Orchestrator {
 	pub fn new() -> Self {
+
+		let brain = Genome::blank(123);
+		println!("{:?}", brain);
 		let config = EngineConfig {
 			food_spread: 2.5f64,
 			size: [100f64, 100f64],
@@ -38,28 +42,39 @@ impl Orchestrator {
 		}
 	}
 
-	pub fn get_agents(&self, count: usize) -> Vec<Agent> {
-		let mut agents: Vec<Agent> = Vec::new();
-		for idx in 0..count {
-			let new_agent = Agent {
-				stats: AgentStats::new(),
-				genome: Rc::new(Genome::blank()),
-				id: idx,
-				position: Position::new(0,0),
-				current_sense: None
-			};
-			agents.push(new_agent);
+	pub fn get_agent_position(&mut self) -> Position {
+		let mut position_found : bool = false;
+		let mut candidate_position: Position = Vector2 { x: 0, y: 0 };
+		while !position_found {
+			let new_x = thread_rng().gen_range(0..=(self.engine.config.size[0] as i32));
+			let new_y = thread_rng().gen_range(0..=(self.engine.config.size[1] as i32));
+			candidate_position = Position::new(new_x, new_y);
+
+			for (idx, agent) in self.engine.agents.iter() {
+				if agent.position == candidate_position {
+					position_found = false;
+				}
+				position_found = true;
+			}
 		}
-		agents
+		candidate_position
 	}
 
 	pub fn start_matches(&mut self) {
-		let initial_agents = self.get_agents(self.engine.config.agent_count);
 
-		for idx in 0..config.agent_count {
-			genepool.
+		for idx in 0..self.engine.config.agent_count {
+			let agent_id = thread_rng().next_u64();
+			let genome = Rc::new(Genome::blank(agent_id));
+			self.genepool.add_genome(agent_id, genome);
+
+			let new_agent = Agent {
+				stats: AgentStats::new(),
+				id: agent_id,
+				position: self.get_agent_position(),
+				current_sense: None
+			};
+			self.engine.agents.insert(agent_id, new_agent);
 		}
-
 
 		let mut matches: Vec<MatchStats> = Vec::new();
 		for i in 0..5 {
