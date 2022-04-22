@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod engine_tests {
+	use std::cell::RefCell;
 	use std::collections::{HashMap, HashSet};
+	use std::rc::Rc;
 	use crate::backend::agent::{Agent, AgentStats};
 	use crate::backend::engine::{Engine, EngineConfig};
 	use crate::backend::gene::Genome;
@@ -23,13 +25,9 @@ mod engine_tests {
 	fn move_normal() {
 		let mut engine = get_engine();
 		let agent1 = Agent {
-			stats: AgentStats {
-				steps_taken: 0,
-				food_eaten: 0,
-				cumulative_food_eaten: 0
-			},
 			position: Position::new(5,5),
 			id: 0,
+			genome: Rc::new(RefCell::new(Genome::blank(1))),
 			current_sense: None
 		};
 		let action = Action::Move(Direction::Up);
@@ -53,22 +51,14 @@ mod engine_tests {
 	fn move_collision() {
 		let mut engine = get_engine();
 		let agent1 = Agent {
-			stats: AgentStats {
-				steps_taken: 0,
-				food_eaten: 0,
-				cumulative_food_eaten: 0
-			},
 			position: Position::new(5,4),
 			id: 1,
+			genome: Rc::new(RefCell::new(Genome::blank(1))),
 			current_sense: None
 		};
 		let agent2 = Agent {
-			stats: AgentStats {
-				steps_taken: 0,
-				food_eaten: 0,
-				cumulative_food_eaten: 0
-			},
 			position: Position::new(5,6),
+			genome: Rc::new(RefCell::new(Genome::blank(2))),
 			id: 2,
 			current_sense: None
 		};
@@ -88,7 +78,6 @@ mod engine_tests {
 		let mut seen_positions: HashSet<Position> = HashSet::new();
 		for (idx, agent) in engine.agents.iter() {
 			seen_positions.insert(agent.position.clone());
-			println!("{:?}", agent.position);
 		}
 		assert_eq!(seen_positions.len(), 2);
 	}
@@ -97,13 +86,9 @@ mod engine_tests {
 	fn move_oob() {
 		let mut engine = get_engine();
 		let mut agent1 = Agent {
-			stats: AgentStats {
-				steps_taken: 0,
-				food_eaten: 0,
-				cumulative_food_eaten: 0
-			},
 			position: Position::new(0,0),
 			id: 0,
+			genome: Rc::new(RefCell::new(Genome::blank(0))),
 			current_sense: None
 		};
 
@@ -124,5 +109,24 @@ mod engine_tests {
 		let action = Action::Move(Direction::Right);
 		let target_position = engine.resolve_action(&agent1, &action);
 		assert_eq!(target_position, Position::new(100, 100));
+	}
+
+	#[test]
+	fn genome_vision() {
+		let mut engine = get_engine();
+		engine.reset();
+		engine.initialise();
+
+		let mut agent1 = Agent {
+			position: Position::new(10,10),
+			id: 0,
+			genome: Rc::new(RefCell::new(Genome::blank(0))),
+			current_sense: None
+		};
+		engine.agents.insert(0, agent1);
+		engine.process_agents();
+
+		println!("{:?}", engine.agents);
+		assert_eq!(1,1);
 	}
 }

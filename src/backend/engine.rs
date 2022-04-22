@@ -12,8 +12,8 @@ use rand::prelude::{IteratorRandom, SliceRandom};
 
 #[derive(Debug)]
 pub struct MatchStats {
-	agent_stats: HashMap<u64, AgentStats>,
-	duration: usize,
+	pub agent_stats: HashMap<u64, AgentStats>,
+	pub duration: usize,
 }
 
 #[derive(Debug)]
@@ -24,6 +24,7 @@ pub struct Engine {
 	pub entities: HashMap<Position, Entity>,
 	pub agents: HashMap<u64, Agent>,
 	pub game_concluded: bool,
+	pub round: usize
 }
 
 #[derive(Debug)]
@@ -45,14 +46,17 @@ impl Engine {
 			agents: HashMap::new(),
 			game_concluded: false,
 			entities: HashMap::new(),
+			round: 0
 		};
 		engine
 	}
 
 
-	pub fn play_match(&mut self) -> MatchStats {
+	pub fn play_match(&mut self, agents: HashMap<u64, Agent>, round: usize) -> MatchStats {
 		self.reset();
+		self.agents = agents;
 		self.initialise();
+		self.round = round;
 
 		while !self.game_concluded {
 			self.step()
@@ -60,7 +64,7 @@ impl Engine {
 
 		let stats = MatchStats {
 			agent_stats: self.agents.iter()
-				.map(|(idx, x)| (*idx, x.stats.clone()))
+				.map(|(idx, x)| (*idx, x.genome.borrow().stats.clone()))
 				.collect::<HashMap<u64, AgentStats>>(),
 			duration: self.round_idx.clone(),
 		};
@@ -166,7 +170,7 @@ impl Engine {
 		}
 	}
 
-	fn process_agents(&mut self) -> HashMap<u64, Action> {
+	pub fn process_agents(&mut self) -> HashMap<u64, Action> {
 		let mut actions: HashMap<u64, Action> = HashMap::new();
 		self.collect_visions();
 		for (idx, agent) in self.agents.iter_mut() {
@@ -180,7 +184,7 @@ impl Engine {
 	pub const DISTANCE_VISIBLE_LENGTH : usize = (Engine::DISTANCE_VISIBLE_SIDE as usize * 2) + 1;
 	pub const DISTANCE_VISIBLE_BLOCKS : usize = (Engine::DISTANCE_VISIBLE_LENGTH as usize).pow(2);
 
-	fn collect_visions(&mut self) {
+	pub fn collect_visions(&mut self) {
 		for (idx, agent) in &mut self.agents {
 			let mut agent_sense = AgentSense {
 				position: agent.position,
@@ -204,9 +208,10 @@ impl Engine {
 		// self.entities = HashMap::new();
 		self.entities = HashMap::new();
 		self.agents = HashMap::new();
+		self.game_concluded = false;
 	}
 
-	fn initialise(&mut self) {
+	pub(crate) fn initialise(&mut self) {
 		self.place_food();
 
 
@@ -225,7 +230,6 @@ impl Engine {
 			.collect();
 
 		// println!("{:?}", coords);
-		println!("{:?}", coords.len());
 		for coord in coords {
 			// self.entities.push(Entity::new(coord, EntityType::Food));
 			// self.entity_mask.insert(coord);
